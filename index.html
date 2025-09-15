@@ -6,15 +6,15 @@
   <title>Gojek MVP - Tanpa Beban</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin: 0; background: #f5f5f5; }
-    header { background: #27ae60; color: white; padding: 15px; }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+    header { background: #27ae60; color: white; padding: 15px; text-align: center; }
     nav button { margin: 5px; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; }
     .active { background: #2c3e50; color: white; }
     .card { background: #fff; padding: 20px; margin: 20px auto; max-width: 400px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     input, select { width: 90%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; }
     button.submit { background: #27ae60; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
     button.submit:hover { background: #219150; }
-    .result { margin-top: 20px; font-size: 18px; font-weight: bold; }
+    .result { margin-top: 20px; font-size: 16px; font-weight: bold; }
     #map { height: 300px; margin: 10px auto; border-radius: 12px; }
     table { width: 90%; margin: 10px auto; border-collapse: collapse; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
@@ -34,7 +34,7 @@
   <div id="userPage" class="card">
     <h2>Pesan Perjalanan</h2>
     <form id="orderForm">
-      <input type="text" id="pickup" placeholder="Lokasi Jemput" required />
+      <input type="text" id="pickup" placeholder="Lokasi Jemput (contoh: Monas)" required />
       <input type="text" id="destination" placeholder="Lokasi Tujuan" required />
       <input type="number" id="distance" placeholder="Jarak (km)" required />
       <select id="service">
@@ -94,6 +94,21 @@
     }).addTo(map);
     let marker;
 
+    // Convert alamat ke koordinat (pakai OSM API)
+    function getCoordinates(address, callback) {
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.length > 0) {
+            let lat = parseFloat(data[0].lat);
+            let lon = parseFloat(data[0].lon);
+            callback(lat, lon);
+          } else {
+            alert("Lokasi tidak ditemukan, coba isi alamat lebih spesifik.");
+          }
+        });
+    }
+
     // Order Form
     document.getElementById("orderForm").addEventListener("submit", function(e) {
       e.preventDefault();
@@ -119,11 +134,12 @@
          Layanan: ${service}<br><br>
          💰 Estimasi Biaya: Rp ${total.toLocaleString()}`;
 
-      // Tambah marker random lokasi
-      if (marker) map.removeLayer(marker);
-      let lat = -6.2 + (Math.random() * 0.1);
-      let lng = 106.8 + (Math.random() * 0.1);
-      marker = L.marker([lat, lng]).addTo(map).bindPopup("Lokasi Jemput").openPopup();
+      // Cari koordinat lokasi jemput
+      getCoordinates(pickup, function(lat, lon) {
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lon]).addTo(map).bindPopup("Lokasi Jemput").openPopup();
+        map.setView([lat, lon], 15);
+      });
     });
 
     // Load Orders for Driver
