@@ -2,24 +2,38 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>GoRide MVP</title>
+  <title>GoRide MVP - Samarinda & Kukar</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     body { font-family: Arial, sans-serif; margin:0; padding:0; }
-    #map { height: 400px; }
-    .form-box { padding: 10px; background:#f4f4f4; }
-    input, button { padding:8px; margin:5px 0; width:100%; }
-    .result { margin-top:10px; font-weight:bold; }
+    .form-box { 
+      padding: 10px; 
+      background:#f4f4f4; 
+      position: relative; 
+      z-index: 1000; 
+    }
+    #map { 
+      height: calc(100vh - 200px); /* sisa layar setelah form */
+    }
+    input, button { 
+      padding:8px; 
+      margin:5px 0; 
+      width:100%; 
+    }
+    .result { 
+      margin-top:10px; 
+      font-weight:bold; 
+    }
   </style>
 </head>
 <body>
   <div class="form-box">
     <form id="orderForm">
       <label>Lokasi Jemput:</label>
-      <input type="text" id="pickup" placeholder="Contoh: Monas Jakarta" required>
+      <input type="text" id="pickup" placeholder="Contoh: Mall Lembuswana" required>
       <label>Tujuan:</label>
-      <input type="text" id="destination" placeholder="Contoh: Plaza Senayan" required>
+      <input type="text" id="destination" placeholder="Contoh: Tenggarong" required>
       <button type="submit">Pesan</button>
     </form>
     <div class="result" id="result"></div>
@@ -29,29 +43,19 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    let map = L.map('map').setView([-6.200000, 106.816666], 12);
+    let map = L.map('map').setView([-0.502106, 117.153709], 12); // Samarinda center
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     let markers = [];
+    let routeLine;
 
-    // Rumus haversine
-    function getDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371; // km
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a =
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
+    const API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijk4Njk4MWMxOWVmODQwMDU4ZWJlZTA1M2M1MzQxZTAxIiwiaCI6Im11cm11cjY0In0="; // Ganti dengan API key ORS
 
     // Ambil koordinat dari alamat
     function getCoordinates(address, callback) {
-      fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${address}`)
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=ID&q=${address}`)
         .then(res => res.json())
         .then(data => {
           if (data.length > 0) {
@@ -60,6 +64,32 @@
             callback(lat, lon);
           } else {
             alert("Alamat tidak ditemukan: " + address);
+          }
+        });
+    }
+
+    // Ambil rute dari ORS
+    function getRoute(lat1, lon1, lat2, lon2) {
+      fetch(`https://api.openrouteservice.org/v2/directions/driving-car?api_key=${API_KEY}&start=${lon1},${lat1}&end=${lon2},${lat2}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.routes && data.routes.length > 0) {
+            let route = data.routes[0];
+            let distance = (route.summary.distance / 1000).toFixed(2); // meter -> km
+
+            // Tarif: Rp3.000 dasar + Rp1.500/km
+            let price = 3000 + (distance * 1500);
+
+            document.getElementById("result").innerHTML =
+              `Jarak Jalan: ${distance} km<br>Harga: Rp${Math.round(price).toLocaleString()}`;
+
+            // Gambar rute di peta
+            let coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+            if (routeLine) map.removeLayer(routeLine);
+            routeLine = L.polyline(coords, {color: 'blue'}).addTo(map);
+            map.fitBounds(routeLine.getBounds());
+          } else {
+            alert("Rute tidak ditemukan!");
           }
         });
     }
@@ -83,16 +113,8 @@
           let m2 = L.marker([lat2, lon2]).addTo(map).bindPopup("Tujuan: " + destination).openPopup();
           markers.push(m2);
 
-          // Fokus peta ke tengah
-          let bounds = L.latLngBounds([ [lat1, lon1], [lat2, lon2] ]);
-          map.fitBounds(bounds);
-
-          // Hitung jarak
-          let distance = getDistance(lat1, lon1, lat2, lon2).toFixed(2);
-          let price = 5000 + (distance * 2500);
-
-          document.getElementById("result").innerHTML =
-            `Jarak: ${distance} km<br>Harga: Rp${price.toLocaleString()}`;
+          // Ambil rute via ORS
+          getRoute(lat1, lon1, lat2, lon2);
         });
       });
     });
