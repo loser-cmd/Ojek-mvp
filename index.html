@@ -1,14 +1,147 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gojek MVP - Tanpa Beban</title>
-  </head>
-  <body style="font-family: Arial; text-align:center; padding:50px">
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gojek MVP - Tanpa Beban</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 0; background: #f5f5f5; }
+    header { background: #27ae60; color: white; padding: 15px; }
+    nav button { margin: 5px; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; }
+    .active { background: #2c3e50; color: white; }
+    .card { background: #fff; padding: 20px; margin: 20px auto; max-width: 400px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    input, select { width: 90%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; }
+    button.submit { background: #27ae60; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+    button.submit:hover { background: #219150; }
+    .result { margin-top: 20px; font-size: 18px; font-weight: bold; }
+    #map { height: 300px; margin: 10px auto; border-radius: 12px; }
+    table { width: 90%; margin: 10px auto; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #27ae60; color: white; }
+  </style>
+</head>
+<body>
+  <header>
     <h1>🚖 Gojek MVP - Tanpa Beban</h1>
-    <p>Selamat datang di aplikasi ojek online adil untuk driver!</p>
-    <p>Versi ini masih sangat sederhana (MVP 1 file).</p>
-    <p>💡 Langkah berikutnya: tambahkan fitur pemesanan & hitung tarif.</p>
-  </body>
+    <nav>
+      <button id="tabUser" class="active">Penumpang</button>
+      <button id="tabDriver">Driver</button>
+    </nav>
+  </header>
+
+  <!-- User Page -->
+  <div id="userPage" class="card">
+    <h2>Pesan Perjalanan</h2>
+    <form id="orderForm">
+      <input type="text" id="pickup" placeholder="Lokasi Jemput" required />
+      <input type="text" id="destination" placeholder="Lokasi Tujuan" required />
+      <input type="number" id="distance" placeholder="Jarak (km)" required />
+      <select id="service">
+        <option value="motor">Motor</option>
+        <option value="mobil">Mobil</option>
+      </select>
+      <button type="submit" class="submit">Pesan Sekarang</button>
+    </form>
+    <div id="map"></div>
+    <div class="result" id="result"></div>
+  </div>
+
+  <!-- Driver Page -->
+  <div id="driverPage" class="card" style="display:none;">
+    <h2>📋 Order Masuk</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Jemput</th>
+          <th>Tujuan</th>
+          <th>Jarak</th>
+          <th>Layanan</th>
+          <th>Tarif</th>
+        </tr>
+      </thead>
+      <tbody id="orderList"></tbody>
+    </table>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Tab Switch
+    const tabUser = document.getElementById("tabUser");
+    const tabDriver = document.getElementById("tabDriver");
+    const userPage = document.getElementById("userPage");
+    const driverPage = document.getElementById("driverPage");
+
+    tabUser.addEventListener("click", () => {
+      userPage.style.display = "block";
+      driverPage.style.display = "none";
+      tabUser.classList.add("active");
+      tabDriver.classList.remove("active");
+    });
+
+    tabDriver.addEventListener("click", () => {
+      userPage.style.display = "none";
+      driverPage.style.display = "block";
+      tabDriver.classList.add("active");
+      tabUser.classList.remove("active");
+      loadOrders();
+    });
+
+    // Leaflet Map
+    const map = L.map('map').setView([-6.2, 106.8], 12); // default Jakarta
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    let marker;
+
+    // Order Form
+    document.getElementById("orderForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const pickup = document.getElementById("pickup").value;
+      const destination = document.getElementById("destination").value;
+      const distance = parseFloat(document.getElementById("distance").value);
+      const service = document.getElementById("service").value;
+
+      // Tarif sederhana
+      let baseFare = 2000; 
+      let perKm = service === "motor" ? 3000 : 5000;
+      let total = baseFare + (perKm * distance);
+
+      // Simpan order
+      let orders = JSON.parse(localStorage.getItem("orders") || "[]");
+      orders.push({ pickup, destination, distance, service, total });
+      localStorage.setItem("orders", JSON.stringify(orders));
+
+      // Update result
+      document.getElementById("result").innerHTML = 
+        `Order: ${pickup} ➡️ ${destination}<br>
+         Jarak: ${distance} km<br>
+         Layanan: ${service}<br><br>
+         💰 Estimasi Biaya: Rp ${total.toLocaleString()}`;
+
+      // Tambah marker random lokasi
+      if (marker) map.removeLayer(marker);
+      let lat = -6.2 + (Math.random() * 0.1);
+      let lng = 106.8 + (Math.random() * 0.1);
+      marker = L.marker([lat, lng]).addTo(map).bindPopup("Lokasi Jemput").openPopup();
+    });
+
+    // Load Orders for Driver
+    function loadOrders() {
+      let orders = JSON.parse(localStorage.getItem("orders") || "[]");
+      let list = document.getElementById("orderList");
+      list.innerHTML = "";
+      orders.forEach(o => {
+        let row = `<tr>
+          <td>${o.pickup}</td>
+          <td>${o.destination}</td>
+          <td>${o.distance} km</td>
+          <td>${o.service}</td>
+          <td>Rp ${o.total.toLocaleString()}</td>
+        </tr>`;
+        list.innerHTML += row;
+      });
+    }
+  </script>
+</body>
 </html>
