@@ -2,122 +2,93 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>GoRide MVP - Samarinda & Kukar</title>
+  <title>GoRide Mini</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    body { font-family: Arial, sans-serif; margin:0; padding:0; }
-    .form-box { 
-      padding: 10px; 
-      background:#f4f4f4; 
-      position: relative; 
-      z-index: 1000; 
+    body, html { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; }
+    #dashboard {
+      background: #1e88e5; color: white; padding: 10px;
+      display: flex; justify-content: space-around; font-size: 14px;
     }
-    #map { 
-      height: calc(100vh - 200px); /* sisa layar setelah form */
+    #controls {
+      padding: 10px; background: #f1f1f1;
     }
-    input, button { 
-      padding:8px; 
-      margin:5px 0; 
-      width:100%; 
+    #map { height: 80%; }
+    input, button {
+      padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 5px;
     }
-    .result { 
-      margin-top:10px; 
-      font-weight:bold; 
-    }
+    button { background: #1e88e5; color: white; cursor: pointer; }
   </style>
 </head>
 <body>
-  <div class="form-box">
-    <form id="orderForm">
-      <label>Lokasi Jemput:</label>
-      <input type="text" id="pickup" placeholder="Contoh: Mall Lembuswana" required>
-      <label>Tujuan:</label>
-      <input type="text" id="destination" placeholder="Contoh: Tenggarong" required>
-      <button type="submit">Pesan</button>
-    </form>
-    <div class="result" id="result"></div>
+  <!-- Dashboard Atas -->
+  <div id="dashboard">
+    <div>Jarak: <span id="jarak">-</span> km</div>
+    <div>Harga: Rp <span id="harga">-</span></div>
+    <div>Status: <span id="status">Menunggu</span></div>
   </div>
 
+  <!-- Input Order -->
+  <div id="controls">
+    <input id="asal" placeholder="Lokasi Jemput (contoh: Mall Lembuswana, Samarinda)" size="40"/>
+    <input id="tujuan" placeholder="Lokasi Tujuan (contoh: Stadion Aji Imbut, Kukar)" size="40"/>
+    <button onclick="cariRute()">Pesan</button>
+  </div>
+
+  <!-- Peta -->
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    let map = L.map('map').setView([-0.502106, 117.153709], 12); // Samarinda center
+    // Inisialisasi Peta
+    const map = L.map('map').setView([-0.502106, 117.153709], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+      attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    let markers = [];
-    let routeLine;
+    let routeLayer;
 
-    const API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijk4Njk4MWMxOWVmODQwMDU4ZWJlZTA1M2M1MzQxZTAxIiwiaCI6Im11cm11cjY0In0="; // Ganti dengan API key ORS
-
-    // Ambil koordinat dari alamat
-    function getCoordinates(address, callback) {
-      fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=ID&q=${address}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.length > 0) {
-            let lat = parseFloat(data[0].lat);
-            let lon = parseFloat(data[0].lon);
-            callback(lat, lon);
-          } else {
-            alert("Alamat tidak ditemukan: " + address);
-          }
-        });
+    // Fungsi Geocoding (alamat → koordinat)
+    async function geocode(alamat) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(alamat)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.length === 0) throw new Error("Alamat tidak ditemukan");
+      return [parseFloat(data[0].lon), parseFloat(data[0].lat)];
     }
 
-    // Ambil rute dari ORS
-    function getRoute(lat1, lon1, lat2, lon2) {
-      fetch(`https://api.openrouteservice.org/v2/directions/driving-car?api_key=${API_KEY}&start=${lon1},${lat1}&end=${lon2},${lat2}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.routes && data.routes.length > 0) {
-            let route = data.routes[0];
-            let distance = (route.summary.distance / 1000).toFixed(2); // meter -> km
+    // Fungsi Cari Rute
+    async function cariRute() {
+      const asal = document.getElementById('asal').value;
+      const tujuan = document.getElementById('tujuan').value;
+      document.getElementById('status').textContent = "Mencari rute...";
 
-            // Tarif: Rp3.000 dasar + Rp1.500/km
-            let price = 3000 + (distance * 1500);
+      try {
+        const [lon1, lat1] = await geocode(asal);
+        const [lon2, lat2] = await geocode(tujuan);
 
-            document.getElementById("result").innerHTML =
-              `Jarak Jalan: ${distance} km<br>Harga: Rp${Math.round(price).toLocaleString()}`;
+        const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        const data = await res.json();
 
-            // Gambar rute di peta
-            let coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-            if (routeLine) map.removeLayer(routeLine);
-            routeLine = L.polyline(coords, {color: 'blue'}).addTo(map);
-            map.fitBounds(routeLine.getBounds());
-          } else {
-            alert("Rute tidak ditemukan!");
-          }
-        });
+        if (data.code !== "Ok") throw new Error("Rute tidak ditemukan");
+
+        const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        const jarakKm = (data.routes[0].distance / 1000).toFixed(2);
+        const harga = Math.max(5000, Math.round(jarakKm * 3000)); // Rp 3.000/km, min Rp 5.000
+
+        if (routeLayer) map.removeLayer(routeLayer);
+        routeLayer = L.polyline(coords, { color: 'blue', weight: 5 }).addTo(map);
+        map.fitBounds(routeLayer.getBounds());
+
+        document.getElementById('jarak').textContent = jarakKm;
+        document.getElementById('harga').textContent = harga.toLocaleString();
+        document.getElementById('status').textContent = "Order siap 🚖";
+      } catch (e) {
+        document.getElementById('status').textContent = e.message;
+      }
     }
-
-    document.getElementById("orderForm").addEventListener("submit", function(e) {
-      e.preventDefault();
-      let pickup = document.getElementById("pickup").value;
-      let destination = document.getElementById("destination").value;
-
-      getCoordinates(pickup, function(lat1, lon1) {
-        getCoordinates(destination, function(lat2, lon2) {
-          // Hapus marker lama
-          markers.forEach(m => map.removeLayer(m));
-          markers = [];
-
-          // Tambah marker jemput
-          let m1 = L.marker([lat1, lon1]).addTo(map).bindPopup("Jemput: " + pickup).openPopup();
-          markers.push(m1);
-
-          // Tambah marker tujuan
-          let m2 = L.marker([lat2, lon2]).addTo(map).bindPopup("Tujuan: " + destination).openPopup();
-          markers.push(m2);
-
-          // Ambil rute via ORS
-          getRoute(lat1, lon1, lat2, lon2);
-        });
-      });
-    });
   </script>
 </body>
 </html>
