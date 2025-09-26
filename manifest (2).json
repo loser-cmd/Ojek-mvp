@@ -1,0 +1,41 @@
+{
+  "background_color": "#c38e8e",
+  "description": "A mini Ojek online app untuk Kalimantan Timur.",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "ojek-mvp.vercel",
+  "orientation": "any",
+  "scope": "/google.com",
+  "short_name": "ojek-mvp.vercel",
+  "start_url": "/https://ojek-mvp.vercel.app",
+  "theme_color": "#1e88e5",
+  "icons": [
+    {
+      "src": "https://ojek-mvp.vercel.app/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "isSquare": true,
+      "isPng": true,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 192,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": true
+    },
+    {
+      "src": "https://ojek-mvp.vercel.app/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "isSquare": true,
+      "isPng": true,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 512,
+      "is512x512": true,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ],
+  "lang": "id"
+}
