@@ -1,8 +1,3 @@
-# File ini hanya agar folder assets tetap muncul di GitHub.
-/assets/
-  ├─ icon-192.png
-  ├─ icon-512.png
-  └─ manifest.json
 {
   "name": "Ojek Kaltim",
   "short_name": "OjekKaltim",
@@ -13,12 +8,12 @@
   "description": "A mini Ojek online app untuk Kalimantan Timur.",
   "icons": [
     {
-      "src": "assets/icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "assets/icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
