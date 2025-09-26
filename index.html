@@ -1,82 +1,125 @@
-<link rel="manifest" href="manifest.json">
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mahakam Ojek</title>
-  <meta name="description" content="A mini Ojek online app untuk Kalimantan Timur.">
+  <meta name="description" content="Aplikasi Ojek Online Mini berbasis PWA untuk Kalimantan Timur.">
 
-  <!-- Link manifest di ROOT -->
+  <!-- Manifest -->
   <link rel="manifest" href="manifest.json">
 
-  <!-- Theme color untuk status bar di Android -->
+  <!-- Theme color untuk Android -->
   <meta name="theme-color" content="#1e88e5">
 
-  <!-- Ikon utama (favicon) -->
+  <!-- Ikon -->
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-
-  <!-- Apple Touch Icon agar bagus di iOS -->
   <link rel="apple-touch-icon" href="icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-</head>
-<body>
-  <h1>Welcome Stronge Driver</h1>
-  <p>Selamat datang di aplikasi Mahakam Ojek berbasis PWA!</p>
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js")
-        .then(reg => console.log("Service Worker terdaftar:", reg.scope))
-        .catch(err => console.log("Service Worker gagal:", err));
-    }
-  </script>
-</body>
-</html>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <title>GoRide Mini</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <!-- Style -->
   <style>
-    body, html { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; }
+    * { box-sizing: border-box; }
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      font-family: 'Inter', Arial, sans-serif;
+      background: #f8fafc;
+      color: #333;
+    }
+
+    header {
+      background: #1e88e5; color: white;
+      padding: 16px 24px;
+      font-size: 18px; font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
     #dashboard {
-      background: #1e88e5; color: white; padding: 10px;
-      display: flex; justify-content: space-around; font-size: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      padding: 16px;
     }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .card h3 {
+      margin: 0; font-size: 14px; color: #666;
+    }
+    .card p {
+      margin: 6px 0 0; font-size: 20px; font-weight: 600; color: #1e88e5;
+    }
+
     #controls {
-      padding: 10px; background: #f1f1f1;
+      padding: 16px;
+      background: white;
+      display: flex; flex-wrap: wrap; gap: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
-    #map { height: 80%; }
-    input, button {
-      padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 5px;
+    input {
+      flex: 1;
+      min-width: 220px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
     }
-    button { background: #1e88e5; color: white; cursor: pointer; }
+    button {
+      background: #1e88e5;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #1565c0;
+    }
+
+    #map {
+      height: calc(100% - 280px);
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
-  <!-- Dashboard Atas -->
+  <!-- Header -->
+  <header>🚖 Mahakam Ojek - Mini GoRide</header>
+
+  <!-- Dashboard atas -->
   <div id="dashboard">
-    <div>Jarak: <span id="jarak">-</span> km</div>
-    <div>Harga: Rp <span id="harga">-</span></div>
-    <div>Status: <span id="status">Menunggu</span></div>
+    <div class="card">
+      <h3>Jarak</h3>
+      <p><span id="jarak">-</span> km</p>
+    </div>
+    <div class="card">
+      <h3>Harga</h3>
+      <p>Rp <span id="harga">-</span></p>
+    </div>
+    <div class="card">
+      <h3>Status</h3>
+      <p id="status">Menunggu</p>
+    </div>
   </div>
 
-  <!-- Input Order -->
+  <!-- Form order -->
   <div id="controls">
-    <input id="asal" placeholder="Lokasi Jemput (contoh: Mall Lembuswana, Samarinda)" size="40"/>
-    <input id="tujuan" placeholder="Lokasi Tujuan (contoh: Stadion Aji Imbut, Kukar)" size="40"/>
+    <input id="asal" placeholder="Lokasi Jemput (contoh: Mall Lembuswana, Samarinda)">
+    <input id="tujuan" placeholder="Lokasi Tujuan (contoh: Stadion Aji Imbut, Kukar)">
     <button onclick="cariRute()">Pesan</button>
   </div>
 
   <!-- Peta -->
   <div id="map"></div>
 
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
     // Inisialisasi Peta
@@ -87,7 +130,7 @@
 
     let routeLayer;
 
-    // Fungsi Geocoding (alamat → koordinat)
+    // Geocoding
     async function geocode(alamat) {
       const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(alamat)}`;
       const res = await fetch(url);
@@ -96,7 +139,7 @@
       return [parseFloat(data[0].lon), parseFloat(data[0].lat)];
     }
 
-    // Fungsi Cari Rute
+    // Cari Rute
     async function cariRute() {
       const asal = document.getElementById('asal').value;
       const tujuan = document.getElementById('tujuan').value;
@@ -114,10 +157,10 @@
 
         const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
         const jarakKm = (data.routes[0].distance / 1000).toFixed(2);
-        const harga = Math.max(5000, Math.round(jarakKm * 3000)); // Rp 3.000/km, min Rp 5.000
+        const harga = Math.max(5000, Math.round(jarakKm * 3000));
 
         if (routeLayer) map.removeLayer(routeLayer);
-        routeLayer = L.polyline(coords, { color: 'blue', weight: 5 }).addTo(map);
+        routeLayer = L.polyline(coords, { color: '#1e88e5', weight: 5 }).addTo(map);
         map.fitBounds(routeLayer.getBounds());
 
         document.getElementById('jarak').textContent = jarakKm;
@@ -126,6 +169,13 @@
       } catch (e) {
         document.getElementById('status').textContent = e.message;
       }
+    }
+
+    // Service Worker PWA
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(reg => console.log("Service Worker terdaftar:", reg.scope))
+        .catch(err => console.log("Service Worker gagal:", err));
     }
   </script>
 </body>
