@@ -25,6 +25,15 @@
 <body>
   <h1>Ojek Kaltim</h1>
   <p>Selamat datang di aplikasi Ojek Kaltim berbasis PWA!</p>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(reg => console.log("Service Worker terdaftar:", reg.scope))
+        .catch(err => console.log("Service Worker gagal:", err));
+    }
+  </script>
+</body>
+</html>
 </body>
 </html>
 <!DOCTYPE html>
