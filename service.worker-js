@@ -1,6 +1,6 @@
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open("ojek-kaltim-v1").then((cache) => {
+    caches.open("mahakam-ojek-v1").then((cache) => {
       return cache.addAll([
         "/main/index.html",
         "/main/icon-192.png",
