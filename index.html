@@ -1,182 +1,260 @@
-<!DOCTYPE html>
+<!-- Mahakam Ojek - Static HTML elegant redesign + Google Maps mock + Capacitor wrapper instructions -->
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mahakam Ojek</title>
-  <meta name="description" content="Aplikasi Ojek Online Mini berbasis PWA untuk Kalimantan Timur.">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mahakam Ojek — Elegan</title>
+  <meta name="description" content="Prototype Mahakam Ojek — statis, integrasi Google Maps + mock perhitungan jarak & tarif." />
 
-  <!-- Manifest -->
-  <link rel="manifest" href="manifest.json">
-
-  <!-- Theme color untuk Android -->
-  <meta name="theme-color" content="#1e88e5">
-
-  <!-- Ikon -->
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
-  <!-- Style -->
+  <!-- Minimal, elegant CSS (no tailwind) -->
   <style>
-    * { box-sizing: border-box; }
-    body, html {
-      margin: 0; padding: 0; height: 100%;
-      font-family: 'Inter', Arial, sans-serif;
-      background: #f8fafc;
-      color: #333;
-    }
+    :root{ --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#6dd3c6; --accent-2:#4b9fe1; --glass: rgba(255,255,255,0.04); }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial; background:linear-gradient(180deg,#071021 0%, #071b2a 60%); color:#e6eef6}
+    .container{max-width:1100px;margin:28px auto;padding:24px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:#04202a}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
 
-    header {
-      background: #1e88e5; color: white;
-      padding: 16px 24px;
-      font-size: 18px; font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
+    main{display:grid;grid-template-columns:1fr 360px;gap:20px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.015));border:1px solid rgba(255,255,255,0.04);padding:14px;border-radius:14px;box-shadow:0 6px 24px rgba(2,6,23,0.6)}
 
-    #dashboard {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-      padding: 16px;
-    }
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    }
-    .card h3 {
-      margin: 0; font-size: 14px; color: #666;
-    }
-    .card p {
-      margin: 6px 0 0; font-size: 20px; font-weight: 600; color: #1e88e5;
-    }
+    #map{height:520px;border-radius:10px;overflow:hidden}
+    .controls{display:flex;gap:10px;margin-top:12px}
 
-    #controls {
-      padding: 16px;
-      background: white;
-      display: flex; flex-wrap: wrap; gap: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
-    input {
-      flex: 1;
-      min-width: 220px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 14px;
-    }
-    button {
-      background: #1e88e5;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background: #1565c0;
-    }
+    aside.card{padding:18px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    input,select,button{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    input::placeholder{color:#7f8b96}
+    .small{font-size:13px;color:var(--muted)}
+    .estimate{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:10px}
+    .badge{background:linear-gradient(90deg, rgba(109,211,198,0.12), rgba(75,159,225,0.12));padding:6px 10px;border-radius:999px;color:var(--accent);font-weight:600}
 
-    #map {
-      height: calc(100% - 280px);
-      margin-top: 4px;
-    }
+    .cta{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#022b2a;font-weight:700;padding:12px;border-radius:12px;border:none;cursor:pointer}
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+
+    @media (max-width:900px){main{grid-template-columns:1fr} #map{height:360px} aside{order:2}}
   </style>
+
+  <!-- Google Maps JS API: replace YOUR_API_KEY with actual key -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
 </head>
 <body>
-  <!-- Header -->
-  <header>🚖 Mahakam Ojek - Mini GoRide</header>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">MO</div>
+        <div>
+          <h1>Mahakam Ojek</h1>
+          <p class="lead">Mini GoRide — elegan, cepat & terpercaya</p>
+        </div>
+      </div>
+      <div class="small">Versi demo — statis</div>
+    </header>
 
-  <!-- Dashboard atas -->
-  <div id="dashboard">
-    <div class="card">
-      <h3>Jarak</h3>
-      <p><span id="jarak">-</span> km</p>
-    </div>
-    <div class="card">
-      <h3>Harga</h3>
-      <p>Rp <span id="harga">-</span></p>
-    </div>
-    <div class="card">
-      <h3>Status</h3>
-      <p id="status">Menunggu</p>
-    </div>
+    <main>
+      <section>
+        <div class="card">
+          <div id="map">Memuat peta…</div>
+
+          <div class="controls">
+            <input id="origin" placeholder="Lokasi jemput (klik peta atau tulis)" />
+            <input id="destination" placeholder="Tujuan (klik peta atau tulis)" />
+            <button id="calc" class="cta" style="width:auto;">Hitung</button>
+          </div>
+
+          <div class="estimate">
+            <div>
+              <div class="small">Estimasi Jarak</div>
+              <div id="distance" style="font-weight:700">— km</div>
+            </div>
+            <div>
+              <div class="small">Estimasi Harga</div>
+              <div id="price" style="font-weight:700">Rp —</div>
+            </div>
+            <div class="badge">Menunggu</div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <h3 style="margin:0 0 8px 0">Pesan Ojek</h3>
+        <p class="small">Isikan alamat atau klik pada peta untuk memilih titik jemput & tujuan.</p>
+
+        <div style="margin-top:12px">
+          <label>Lokasi Jemput</label>
+          <input id="form-origin" placeholder="Contoh: Jl. Sudirman 10" />
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Tujuan</label>
+          <input id="form-destination" placeholder="Contoh: Mall Mahakam" />
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Layanan</label>
+          <select id="service">
+            <option value="reg">Ojek — Reguler</option>
+            <option value="express">Ojek — Express (+25%)</option>
+            <option value="courier">Kurir — Barang</option>
+          </select>
+        </div>
+
+        <div style="margin-top:12px" class="estimate">
+          <div>
+            <div class="small">Perkiraan Jarak</div>
+            <div id="form-distance">— km</div>
+          </div>
+          <div>
+            <div class="small">Perkiraan Harga</div>
+            <div id="form-price">Rp —</div>
+          </div>
+        </div>
+
+        <button id="book" class="cta" style="margin-top:14px">Pesan Sekarang</button>
+
+        <hr style="margin:14px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)" />
+        <div class="small">Tip: Ini demo. Masukkan API key Google Maps untuk fungsional penuh.</div>
+      </aside>
+    </main>
+
+    <footer>© 2025 Mahakam Ojek — Demo elegan • Built for conversion</footer>
   </div>
 
-  <!-- Form order -->
-  <div id="controls">
-    <input id="asal" placeholder="Lokasi Jemput (contoh: Mall Lembuswana, Samarinda)">
-    <input id="tujuan" placeholder="Lokasi Tujuan (contoh: Stadion Aji Imbut, Kukar)">
-    <button onclick="cariRute()">Pesan</button>
-  </div>
-
-  <!-- Peta -->
-  <div id="map"></div>
-
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Mock rate configuration & JS logic -->
   <script>
-    // Inisialisasi Peta
-    const map = L.map('map').setView([-0.502106, 117.153709], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    // --- Mock rate data ---
+    const RATES = {
+      base: 5000,          // base fee (Rp)
+      per_km: 2500,        // per kilometer (Rp)
+      min_charge: 7000,    // minimum charge (Rp)
+      express_multiplier: 1.25,
+      courier_per_kg: 2000  // not used in simple demo
+    };
 
-    let routeLayer;
-
-    // Geocoding
-    async function geocode(alamat) {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(alamat)}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.length === 0) throw new Error("Alamat tidak ditemukan");
-      return [parseFloat(data[0].lon), parseFloat(data[0].lat)];
+    // Helpers
+    function formatRupiah(n){
+      return 'Rp ' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
     }
 
-    // Cari Rute
-    async function cariRute() {
-      const asal = document.getElementById('asal').value;
-      const tujuan = document.getElementById('tujuan').value;
-      document.getElementById('status').textContent = "Mencari rute...";
+    // Map + places + distance calculation
+    let map, originMarker, destMarker, placesService, distanceService, autocompleteOrigin, autocompleteDest;
+    function initMap(){
+      const center = {lat:-0.514, lng:117.150}; // default center (e.g., Samarinda)
+      map = new google.maps.Map(document.getElementById('map'), {center, zoom:13, disableDefaultUI:true, gestureHandling:'greedy'});
 
-      try {
-        const [lon1, lat1] = await geocode(asal);
-        const [lon2, lat2] = await geocode(tujuan);
+      distanceService = new google.maps.DistanceMatrixService();
 
-        const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=full&geometries=geojson`;
-        const res = await fetch(url);
-        const data = await res.json();
+      // Click to set points
+      map.addListener('click', (e)=>{
+        const latlng = e.latLng;
+        if(!originMarker){ originMarker = new google.maps.Marker({position:latlng,map, label:'A'}); document.getElementById('origin').value = latlng.lat().toFixed(6)+','+latlng.lng().toFixed(6); }
+        else if(!destMarker){ destMarker = new google.maps.Marker({position:latlng,map, label:'B'}); document.getElementById('destination').value = latlng.lat().toFixed(6)+','+latlng.lng().toFixed(6); }
+        else { originMarker.setMap(null); destMarker.setMap(null); originMarker = new google.maps.Marker({position:latlng,map, label:'A'}); destMarker = null; document.getElementById('origin').value = latlng.lat().toFixed(6)+','+latlng.lng().toFixed(6); }
+      });
 
-        if (data.code !== "Ok") throw new Error("Rute tidak ditemukan");
+      // Attach Places Autocomplete
+      const originInput = document.getElementById('origin');
+      const destInput = document.getElementById('destination');
+      autocompleteOrigin = new google.maps.places.Autocomplete(originInput);
+      autocompleteDest = new google.maps.places.Autocomplete(destInput);
 
-        const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-        const jarakKm = (data.routes[0].distance / 1000).toFixed(2);
-        const harga = Math.max(5000, Math.round(jarakKm * 3000));
+      autocompleteOrigin.addListener('place_changed', ()=>{
+        const p = autocompleteOrigin.getPlace(); if(p.geometry){ map.panTo(p.geometry.location); map.setZoom(15);
+          if(originMarker) originMarker.setPosition(p.geometry.location); else originMarker = new google.maps.Marker({position:p.geometry.location,map, label:'A'});
+        }
+      });
+      autocompleteDest.addListener('place_changed', ()=>{
+        const p = autocompleteDest.getPlace(); if(p.geometry){ map.panTo(p.geometry.location); map.setZoom(15);
+          if(destMarker) destMarker.setPosition(p.geometry.location); else destMarker = new google.maps.Marker({position:p.geometry.location,map, label:'B'});
+        }
+      });
 
-        if (routeLayer) map.removeLayer(routeLayer);
-        routeLayer = L.polyline(coords, { color: '#1e88e5', weight: 5 }).addTo(map);
-        map.fitBounds(routeLayer.getBounds());
+      document.getElementById('calc').addEventListener('click', calculate);
+      document.getElementById('book').addEventListener('click', ()=>alert('Simulasi pesan terkirim — ini demo.'));
 
-        document.getElementById('jarak').textContent = jarakKm;
-        document.getElementById('harga').textContent = harga.toLocaleString();
-        document.getElementById('status').textContent = "Order siap 🚖";
-      } catch (e) {
-        document.getElementById('status').textContent = e.message;
+      // preload some markers (optional)
+      // new google.maps.Marker({position:center,map,label:'K'});
+    }
+
+    // Parse lat,lng or address; if latlng provided returns {lat,lng}
+    function parsePoint(text){
+      if(!text) return null;
+      const parts = text.split(',').map(s=>s.trim());
+      if(parts.length===2 && !isNaN(parts[0]) && !isNaN(parts[1])){
+        return {lat:parseFloat(parts[0]), lng:parseFloat(parts[1])};
       }
+      return text; // treat as address string
     }
 
-    // Service Worker PWA
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js")
-        .then(reg => console.log("Service Worker terdaftar:", reg.scope))
-        .catch(err => console.log("Service Worker gagal:", err));
+    function calculate(){
+      const oText = document.getElementById('origin').value.trim();
+      const dText = document.getElementById('destination').value.trim();
+      if(!oText || !dText){ alert('Isi origin & destination (alamat atau klik peta).'); return; }
+
+      const o = parsePoint(oText);
+      const d = parsePoint(dText);
+
+      // Build request for DistanceMatrix (handles latlng or address)
+      distanceService.getDistanceMatrix({origins:[o], destinations:[d], travelMode: 'DRIVING', unitSystem: google.maps.UnitSystem.METRIC}, (response, status)=>{
+        if(status !== 'OK'){ alert('Error menghitung jarak: ' + status); return; }
+        const el = response.rows[0].elements[0];
+        if(el.status !== 'OK'){ alert('Rute tidak ditemukan'); return; }
+
+        const distMeters = el.distance.value; // meters
+        const distKm = (distMeters/1000);
+        document.getElementById('distance').innerText = distKm.toFixed(2) + ' km';
+        document.getElementById('form-distance').innerText = distKm.toFixed(2) + ' km';
+
+        // price calculation (simple): base + per_km * km
+        let price = Math.max(RATES.min_charge, RATES.base + Math.ceil(distKm)*RATES.per_km);
+
+        const svc = document.getElementById('service').value;
+        if(svc === 'express') price = Math.round(price * RATES.express_multiplier);
+        // courier could add weight logic — omitted for demo
+
+        document.getElementById('price').innerText = formatRupiah(price);
+        document.getElementById('form-price').innerText = formatRupiah(price);
+      });
     }
+
+    // Initialize map when API loaded
+    function init(){ if(window.google && google.maps) initMap(); }
+    window.addEventListener('load', ()=>{
+      if(window.google && google.maps) initMap(); else console.warn('Google Maps API belum siap. Masukkan API key di script src.');
+    });
   </script>
+
+  <!-- CAPACITOR / ANDROID wrapper files & instructions (for converting this static site to an apk)
+       1) Create a folder with this HTML as ./www/index.html
+       2) Install Node.js & npm. Then run: 
+            npm init -y
+            npm install @capacitor/core @capacitor/cli
+       3) Create capacitor.config.json (example below). Then run:
+            npx cap init mahakam-ojek com.mahakam.ojek
+            npx cap add android
+            npx cap copy android
+            npx cap open android   --> opens Android Studio to build APK
+
+       Example capacitor.config.json:
+       {
+         "appId": "com.mahakam.ojek",
+         "appName": "MahakamOjek",
+         "webDir": "www",
+         "bundledWebRuntime": false
+       }
+
+       Tips:
+       - Replace YOUR_API_KEY in index.html with a real Google Maps API key.
+       - In Android Studio: Build > Build Bundle(s) / APK(s) > Build APK(s). Then locate generated APK.
+       - If you prefer Cordova, the same ./www folder can be used in cordova create projects.
+
+       Note: I included only config & instructions here. If you mau, saya bisa: 
+         • generate a ZIP berisi: index.html, capacitor.config.json, package.json, README.md
+         • or generate a complete Android Studio project (lebih besar).
+    -->
 </body>
 </html>
